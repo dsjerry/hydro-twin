@@ -1,6 +1,6 @@
 # 🌊 水利数字孪生综合管理平台
 
-> 基于广东省水利场景的数字孪生大屏项目，包含三个不同地图引擎的实现版本。
+> 基于广东省水利场景的数字孪生大屏项目，包含四个不同地图引擎的实现版本。
 
 ---
 
@@ -10,13 +10,14 @@
 
 ---
 
-## 三个版本对比
+## 四个版本对比
 
 | 版本 | 目录 | 端口 | 地图引擎 | 核心方案 |
 |------|------|------|---------|---------|
 | 🅰 ECharts | `water-digital-twin/` | **8080** | ECharts 5.5 + GeoJSON | 行政地图填色 + 散点 + 线 |
 | 🅱 Leaflet | `water-digital-twin-leaflet/` | **8081** | Leaflet 1.9.4 | 卫星/街道/地形底图 + GeoJSON叠加 |
 | 🅲 OpenLayers | `water-digital-twin-ol/` | **8082** | OpenLayers v10.4 | 专业GIS引擎 + XYZ瓦片 + Vector要素 |
+| 🅳 ECharts GL (2.5D) | `water-digital-twin-3d/` | **8083** | ECharts GL 2.0.9 | 3D地图柱 + 水波纹 + 自转场景 |
 
 ### 🅰 ECharts 版本
 
@@ -56,6 +57,20 @@
 - 三种底图底层切换（不经过 DOM）
 
 **适用场景：** 需要叠加 WMS/WMTS、栅格计算、专业 GIS 功能扩展
+
+### 🅳 ECharts GL 2.5D 版本
+
+**地图方案：** ECharts GL + `geo3D` + `bar3D` + `scatter3D`
+
+- `geo3D` 广东省地图 3D 抬升，带光影材质和 SSAO 环境光遮蔽
+- `bar3D` 降雨量光柱：21个地市上空半透明柱体，颜色渐变
+- `lines3D` 河流动效：5条河流带流动光点轨迹
+- `scatter3D` 水库发光球体，水位状态着色（蓝/黄/红）
+- 水波纹扩散动画：每座水库持续向外扩散半透明圆环
+- 场景自动旋转（`autoRotate`），点击地图暂停/恢复
+- `postEffect` 泛光（Bloom）效果增强视觉冲击
+
+**适用场景：** 汇报展示、科技感大屏、需要视觉冲击力的场合
 
 ---
 
@@ -102,6 +117,7 @@ python3 -m http.server 8080
 ## 技术栈
 
 - ECharts 5.5.0（所有版本的图表）
+- ECharts GL 2.0.9（2.5D 版地图）
 - Leaflet 1.9.4（B 版地图）
 - OpenLayers v10.4.0（C 版地图）
 - 纯原生 JavaScript + CSS
