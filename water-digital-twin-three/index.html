@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水利数字孪生综合管理平台 - Three.js</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+</head>
+<body>
+  <div id="particle-bg"></div>
+
+  <header class="header">
+    <div class="header-left"><div class="header-decoration"></div></div>
+    <div class="header-title">
+      <h1>🌊 水利数字孪生综合管理平台</h1>
+      <p class="header-subtitle">WATER RESOURCES DIGITAL TWIN PLATFORM</p>
+    </div>
+    <div class="header-right">
+      <div class="weather-info"><span id="current-weather">🌤 晴 26°C</span></div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="date" id="date">----年--月--日 周-</div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <section class="panel left-panel">
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">📊</span><span>水库水位监测</span><span class="unit">(m)</span></div>
+        <div class="chart-box" id="chart-water-level"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">🌧</span><span>雨量趋势</span><span class="unit">(mm)</span></div>
+        <div class="chart-box" id="chart-rainfall"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">💧</span><span>河道流量监测</span><span class="unit">(m³/s)</span></div>
+        <div class="chart-box" id="chart-flow"></div>
+      </div>
+    </section>
+
+    <section class="panel center-panel">
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-icon">🏭</div><div class="kpi-value" id="kpi-reservoir">24</div><div class="kpi-label">水库总数</div></div>
+        <div class="kpi-card"><div class="kpi-icon">📏</div><div class="kpi-value" id="kpi-water-level">86.3</div><div class="kpi-label">平均水位(m)</div></div>
+        <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-value" id="kpi-capacity">12.8</div><div class="kpi-label">总库容(亿m³)</div></div>
+        <div class="kpi-card"><div class="kpi-icon">🚰</div><div class="kpi-value" id="kpi-supply">356</div><div class="kpi-label">日供水量(万吨)</div></div>
+      </div>
+
+      <div class="map-card three-map-card">
+        <div class="chart-title">
+          <span class="title-icon">🗺</span>
+          <span>数字孪生流域·3D 地形</span>
+          <span class="unit">鼠标拖拽旋转 · 滚轮缩放</span>
+        </div>
+        <div class="map-container" id="three-map"></div>
+      </div>
+
+      <div class="alert-card">
+        <div class="chart-title"><span class="title-icon">🚨</span><span>实时告警</span><span class="alert-count" id="alert-count">3条未处理</span></div>
+        <div class="alert-list" id="alert-list"></div>
+      </div>
+    </section>
+
+    <section class="panel right-panel">
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">⚙️</span><span>设备运行状态</span><span class="unit">(台)</span></div>
+        <div class="chart-box" id="chart-device"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">🧪</span><span>水质监测</span><span class="unit">(等级)</span></div>
+        <div class="chart-box" id="chart-water-quality"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><span class="title-icon">📈</span><span>供水趋势分析</span><span class="unit">(万吨)</span></div>
+        <div class="chart-box" id="chart-supply"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-line"></div>
+    <div class="footer-text">
+      <span>Copyright © 2026 智慧水利数字孪生平台 v2.0</span>
+      <span class="footer-sep">|</span>
+      <span id="footer-status">系统运行正常  ·  数据更新时间: --</span>
+    </div>
+  </footer>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/three-map.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

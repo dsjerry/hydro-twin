@@ -1,6 +1,6 @@
 # 🌊 水利数字孪生综合管理平台
 
-> 基于广东省水利场景的数字孪生大屏项目，包含四个不同地图引擎的实现版本。
+> 基于广东省水利场景的数字孪生大屏项目，包含六个不同地图引擎的实现版本。
 
 ---
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 四个版本对比
+## 六个版本对比
 
 | 版本 | 目录 | 端口 | 地图引擎 | 核心方案 |
 |------|------|------|---------|---------|
@@ -18,6 +18,8 @@
 | 🅱 Leaflet | `water-digital-twin-leaflet/` | **8081** | Leaflet 1.9.4 | 卫星/街道/地形底图 + GeoJSON叠加 |
 | 🅲 OpenLayers | `water-digital-twin-ol/` | **8082** | OpenLayers v10.4 | 专业GIS引擎 + XYZ瓦片 + Vector要素 |
 | 🅳 ECharts GL (2.5D) | `water-digital-twin-3d/` | **8083** | ECharts GL 2.0.9 | 3D地图柱 + 水波纹 + 自转场景 |
+| 🅴 Three.js 3D 地形 | `water-digital-twin-three/` | **8084** | Three.js r128 | 3D地形网格 + 卫星风冒着色 + OrbitControls |
+| 🅵 Cesium.js 3D 地球 | `water-digital-twin-cesium/` | **8085** | Cesium 1.118 | 真实3D地球 + WorldTerrain + 全球底图 |
 
 ### 🅰 ECharts 版本
 
@@ -72,6 +74,34 @@
 
 **适用场景：** 汇报展示、科技感大屏、需要视觉冲击力的场合
 
+### 🅴 Three.js 3D 地形版本
+
+**地图方案：** Three.js r128 + PlaneGeometry 地形网格 + 逐顶点着色
+
+- 80×80 分段 PlaneGeometry，正弦函数叠加生成丘陵/山地
+- 逐顶点着色：低洼蓝 → 平原绿 → 丘陵棕 → 山地灰
+- DirectionalLight + HemisphereLight 光照系统，带阴影投射
+- OrbitControls 自由拖拽/缩放/自动旋转
+- 水库发光球体 + 水波纹 RingGeometry 缩放动画
+- 河流 CatmullRomCurve3 平滑曲线
+- Raycaster 点击检测 + CSS2DRenderer 标签始终面向相机
+
+**适用场景：** 需要 3D 立体感但不愿用 Cesium 大包的场合、游戏化展示
+
+### 🅵 Cesium.js 3D 地球版本
+
+**地图方案：** Cesium 1.118 + WorldTerrain 真实 3D 地形 + OSM 全球底图
+
+- 真实 3D 地球，广东省上空 40° 俯视角
+- Cesium World Terrain 全球高程数据
+- Canvas 生成的圆形 Billboard 水库标注（带光晕效果）
+- PolylineGlowMaterial 发光河流线，贴地渲染
+- 点击水库弹出信息面板（水位/库容/状态）
+- 危险水库自动 `camera.flyTo` 飞行定位
+- 选中高亮放大效果
+
+**适用场景：** 专业水利数字孪生、需要真实地形的项目、洪水淹没模拟等 GIS 深度应用
+
 ---
 
 ## 项目结构（通用）
@@ -86,6 +116,8 @@ water-digital-twin/
 │   ├── charts.js           # ECharts 图表配置（6个图表）
 │   ├── leaflet-map.js      # Leaflet 地图渲染（仅 Leaflet 版）
 │   ├── openlayers-map.js   # OpenLayers 地图渲染（仅 OL 版）
+│   ├── three-map.js        # Three.js 3D 地图渲染（仅 Three 版）
+│   ├── cesium-map.js       # Cesium 3D 地球渲染（仅 Cesium 版）
 │   └── main.js             # 主逻辑（时钟、粒子、数据刷新）
 └── assets/
     └── guangdong.json      # 广东省 GeoJSON（192KB）
@@ -120,5 +152,7 @@ python3 -m http.server 8080
 - ECharts GL 2.0.9（2.5D 版地图）
 - Leaflet 1.9.4（B 版地图）
 - OpenLayers v10.4.0（C 版地图）
+- Three.js r128（E 版地图）
+- Cesium 1.118（F 版地图）
 - 纯原生 JavaScript + CSS
 - 无任何后端依赖
