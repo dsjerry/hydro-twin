@@ -1,0 +1,8 @@
+# 不要提交缓存/临时文件
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db
+
+# 本地 HTTP 服务记录（如果有）
+*.log
