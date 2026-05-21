@@ -1,0 +1,242 @@
+/* =============================================
+   水利数字孪生 - 主逻辑（API 版）
+   ============================================= */
+
+(() => {
+  'use strict';
+
+  // ==================== 时钟 ====================
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    document.getElementById('date').textContent =
+      `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 周${['日','一','二','三','四','五','六'][now.getDay()]}`;
+  }
+
+  // ==================== 核心指标 ====================
+  function updateKPI(kpi) {
+    animateNumber('kpi-reservoir', kpi.reservoirCount);
+    animateNumber('kpi-water-level', kpi.avgLevel, 1);
+    animateNumber('kpi-capacity', kpi.totalCapacity, 1);
+    animateNumber('kpi-supply', kpi.dailySupply);
+  }
+
+  function animateNumber(id, target, decimals) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const current = parseFloat(el.textContent) || 0;
+    const diff = target - current;
+    const steps = 20;
+    let step = 0;
+
+    const timer = setInterval(() => {
+      step++;
+      const val = current + (diff * step / steps);
+      el.textContent = decimals !== undefined ? val.toFixed(1) : Math.round(val);
+      if (step >= steps) {
+        el.textContent = decimals !== undefined ? target.toFixed(1) : Math.round(target);
+        clearInterval(timer);
+      }
+    }, 30);
+  }
+
+  // ==================== 告警列表 ====================
+  function renderAlerts(alerts) {
+    const container = document.getElementById('alert-list');
+    const levelMap = { critical: '紧急', warning: '警告', info: '提示' };
+
+    container.innerHTML = alerts.map(a =>
+      `<div class="alert-item">
+        <span class="alert-level ${a.level}">${levelMap[a.level] || a.level}</span>
+        <span class="alert-time">${a.time}</span>
+        <span class="alert-msg">${a.msg}</span>
+      </div>`
+    ).join('');
+
+    document.getElementById('alert-count').textContent = `${alerts.filter(a => a.level !== 'info').length}条未处理`;
+  }
+
+  // ==================== 仪表盘粒子动画 ====================
+  function initParticles() {
+    const bg = document.getElementById('particle-bg');
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+    bg.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const COUNT = 50;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function createParticles() {
+      particles = [];
+      for (let i = 0; i < COUNT; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          r: Math.random() * 1.5 + 0.5,
+          alpha: Math.random() * 0.4 + 0.1,
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 180, 255, ${p.alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', () => {
+      resize();
+      createParticles();
+    });
+    resize();
+    createParticles();
+    draw();
+  }
+
+  // ==================== 数据刷新流程（API 版） ====================
+  let refreshTimer = null;
+
+  async function refreshAll() {
+    const data = await ApiData.fetchAll();
+    if (!data) {
+      // 请求失败时保留旧数据，30秒后重试
+      return;
+    }
+
+    // 更新时间
+    document.getElementById('footer-status').textContent =
+      `系统运行正常  ·  数据更新时间: ${data.dateStr} ${data.timestamp}`;
+
+    // KPI
+    updateKPI(data.kpi);
+
+    // 图表 — 保留地图实例不销毁
+    const prevInstances = window.__chartInstances || {};
+    const mapChart = prevInstances['chart-map'];
+    Object.keys(prevInstances).forEach(key => {
+      if (key !== 'chart-map') {
+        try { prevInstances[key].dispose(); } catch(e) {}
+      }
+    });
+    window.__chartInstances = mapChart ? { 'chart-map': mapChart } : {};
+
+    ChartRenderer.renderWaterLevelChart('chart-water-level', data.waterLevels);
+    ChartRenderer.renderRainfallChart('chart-rainfall', data.rainfall);
+    ChartRenderer.renderFlowChart('chart-flow', data.flows);
+    ChartRenderer.renderDeviceChart('chart-device', data.device);
+    ChartRenderer.renderWaterQualityChart('chart-water-quality', data.quality);
+    ChartRenderer.renderSupplyChart('chart-supply', data.supply);
+
+    // 地图更新 — 不销毁重建，只更新数据
+    if (mapChart) {
+      const reservoirs = window.__RESERVOIRS || [];
+      const reservoirScatter = (data.waterLevels || []).map(r => {
+        const res = reservoirs.find(ri => ri.name === r.name);
+        return {
+          name: r.name,
+          value: [res ? res.lng : 114.0, res ? res.lat : 23.5, r.level],
+          level: r.level,
+          status: r.status,
+          capacity: r.capacity,
+          capRate: r.capRate,
+        };
+      }).filter(r => r.value[0] && r.value[1]);
+
+      mapChart.setOption({
+        series: [
+          {}, // 降雨填色 — 不动
+          {}, {}, {}, {}, {}, // 河流线 — 不动
+          { data: reservoirScatter }, // 更新水库数据
+        ],
+      });
+    }
+
+    // 告警
+    renderAlerts(data.alerts);
+  }
+
+  // ==================== 告警滚动动画 ====================
+  function initAlertScroll() {
+    const list = document.getElementById('alert-list');
+    if (!list) return;
+    setInterval(() => {
+      const items = list.querySelectorAll('.alert-item');
+      if (items.length <= 3) return;
+      items[0].style.transition = 'all 0.5s ease';
+      items[0].style.opacity = '0';
+      items[0].style.transform = 'translateX(-30px)';
+      setTimeout(() => {
+        list.appendChild(items[0]);
+        items[0].style.transition = 'none';
+        items[0].style.opacity = '1';
+        items[0].style.transform = 'translateX(0)';
+      }, 500);
+    }, 4000);
+  }
+
+  // ==================== 启动（异步） ====================
+  async function init() {
+    // 预初始化图表实例容器（防止 async 时序问题）
+    window.__chartInstances = {};
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    initParticles();
+
+    // 先加载静态坐标数据，再初始化页面
+    await ApiData.loadStaticData();
+
+    // 首次请求完整数据，用于地图首次渲染
+    const initialData = await ApiData.fetchAll();
+    if (initialData) {
+      // 地图第一次渲染（需要完整的 initialData + 静态坐标）
+      ChartRenderer.renderGuangdongMap('chart-map', initialData);
+      refreshAll();
+    }
+
+    initAlertScroll();
+
+    // 每 30 秒刷新一次数据
+    refreshTimer = setInterval(refreshAll, 30000);
+
+    // 窗口缩放时 resize 图表
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ChartRenderer.resizeAll();
+      }, 200);
+    });
+
+    console.log('🌊 水利数字孪生平台已启动（API 模式）');
+    console.log(`📡 数据源: ${API_BASE}/dashboard`);
+    console.log('📊 数据每30秒自动刷新');
+  }
+
+  // 等待 DOM 加载完成
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
